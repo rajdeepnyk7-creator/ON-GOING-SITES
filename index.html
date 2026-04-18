@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ongoing Sites – Naranpura Ward</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0f1a; --surface: #111827; --card: #1a2235; --border: #1e2d45;
+      --accent: #f59e0b; --accent2: #3b82f6; --danger: #ef4444; --success: #10b981;
+      --text: #e2e8f0; --muted: #94a3b8;
+      --nb: #3b82f6; --mb: #10b981;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ═══════════════════════════════
+       SHARED HEADER
+    ═══════════════════════════════ */
+    header {
+      background: linear-gradient(135deg,#0d1b2a 0%,#0b1622 60%,#0f1e33 100%);
+      border-bottom: 2px solid var(--accent);
+      padding: 20px 28px; display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .hicon { font-size: 2rem; }
+    .htxt h1 { font-family:'Rajdhani',sans-serif; font-size:1.55rem; font-weight:700; color:#fff; letter-spacing:.04em; }
+    .htxt p  { color:var(--muted); font-size:.75rem; margin-top:2px; text-transform:uppercase; letter-spacing:.07em; }
+    .hright  { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+    .badge-count {
+      background:rgba(245,158,11,.15); border:1px solid rgba(245,158,11,.4);
+      color:var(--accent); font-family:'Rajdhani',sans-serif; font-size:.95rem; font-weight:600;
+      padding:5px 14px; border-radius:20px; white-space:nowrap;
+    }
+    .btn-admin-toggle {
+      background:rgba(239,68,68,.12); border:1.5px solid rgba(239,68,68,.35);
+      color:#f87171; font-family:'DM Sans',sans-serif; font-size:.78rem; font-weight:500;
+      padding:7px 14px; border-radius:9px; cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .btn-admin-toggle:hover { background:rgba(239,68,68,.25); }
+    .btn-admin-toggle.active { background:#ef4444; border-color:#ef4444; color:#fff; }
+
+    /* ═══════════════════════════════
+       LOADING SCREEN
+    ═══════════════════════════════ */
+    #loadingScreen {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:60vh; gap:16px;
+    }
+    .spinner {
+      width:44px; height:44px; border:3px solid var(--border);
+      border-top-color:var(--accent); border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loadingScreen p { color:var(--muted); font-size:.9rem; }
+
+    /* ═══════════════════════════════
+       PUBLIC VIEW
+    ═══════════════════════════════ */
+    #publicView { display:none; }
+
+    .controls { max-width:1200px; margin:24px auto 0; padding:0 22px; }
+    .filter-row { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:14px; align-items:center; }
+    .flabel { font-family:'Rajdhani',sans-serif; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+    .fbtn {
+      background:var(--card); border:1.5px solid var(--border); color:var(--muted);
+      font-family:'DM Sans',sans-serif; font-size:.8rem; padding:6px 15px; border-radius:20px;
+      cursor:pointer; transition:all .2s; font-weight:500;
+    }
+    .fbtn:hover { border-color:var(--accent2); color:var(--text); }
+    .fbtn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; font-weight:600; }
+    .fbtn.active.fn { background:#1d4ed8; border-color:var(--nb); }
+    .fbtn.active.fm { background:#059669; border-color:var(--mb); }
+
+    .search-wrap { position:relative; }
+    .si { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:16px; pointer-events:none; }
+    #searchInput {
+      width:100%; background:var(--card); border:1.5px solid var(--border); border-radius:11px;
+      color:var(--text); font-family:'DM Sans',sans-serif; font-size:.95rem;
+      padding:13px 16px 13px 42px; outline:none; transition:border-color .2s,box-shadow .2s;
+    }
+    #searchInput::placeholder { color:var(--muted); }
+    #searchInput:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(245,158,11,.15); }
+    .stats-row { display:flex; justify-content:space-between; align-items:center; margin:10px 0 0; }
+    #resultCount { font-size:.8rem; color:var(--muted); }
+    #resultCount span { color:var(--accent); font-weight:600; }
+    .sync-info { font-size:.72rem; color:var(--muted); display:flex; align-items:center; gap:5px; }
+    .sync-dot { width:6px; height:6px; background:var(--success); border-radius:50%; display:inline-block; }
+
+    .grid {
+      max-width:1200px; margin:18px auto 40px; padding:0 22px;
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px;
+    }
+    .pcard {
+      background:var(--card); border:1.5px solid var(--border); border-radius:15px;
+      padding:18px 20px; cursor:pointer; transition:border-color .2s,transform .15s,box-shadow .2s;
+      position:relative; overflow:hidden;
+    }
+    .pcard::before { content:''; position:absolute; left:0;top:0;bottom:0; width:4px; background:var(--nb); border-radius:15px 0 0 15px; }
+    .pcard.fm::before { background:var(--mb); }
+    .pcard:hover { border-color:var(--accent); transform:translateY(-3px); box-shadow:0 12px 36px rgba(0,0,0,.5); }
+    .pcard-hd { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:9px; }
+    .pcard-sr { font-family:'Rajdhani',sans-serif; font-size:.7rem; font-weight:600; letter-spacing:.1em; color:var(--muted); background:rgba(255,255,255,.05); padding:2px 8px; border-radius:5px; }
+    .tp-badge { font-size:.68rem; font-weight:600; padding:2px 9px; border-radius:20px; font-family:'Rajdhani',sans-serif; white-space:nowrap; }
+    .tp-badge.fn { background:rgba(59,130,246,.15); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
+    .tp-badge.fm { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.3); }
+    .pcard-file { font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700; color:var(--accent); margin-bottom:3px; }
+    .pcard-addr { font-size:.8rem; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .pcard-ft { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:11px; border-top:1px solid var(--border); }
+    .plot-info { font-size:.75rem; color:var(--muted); }
+    .plot-info strong { color:var(--text); font-size:.8rem; }
+    .view-lbl { font-size:.75rem; color:var(--accent2); font-weight:500; }
+    .no-results { grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted); }
+    .no-results .emo { font-size:2.8rem; margin-bottom:10px; }
+
+    /* ═══════════════════════════════
+       DETAIL MODAL (PUBLIC)
+    ═══════════════════════════════ */
+    .overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.75);
+      z-index:500; align-items:center; justify-content:center; padding:20px;
+      backdrop-filter:blur(4px);
+    }
+    .overlay.open { display:flex; animation:fadeIn .18s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal {
+      background:var(--surface); border:1.5px solid var(--border); border-radius:18px;
+      width:100%; max-width:660px; max-height:90vh; overflow-y:auto;
+      box-shadow:0 24px 80px rgba(0,0,0,.8); animation:slideUp .22s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(28px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .modal-hd {
+      padding:22px 22px 0; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+      position:sticky; top:0; background:var(--surface); z-index:10;
+      padding-bottom:14px; border-bottom:1px solid var(--border);
+    }
+    .mtitle { font-family:'Rajdhani',sans-serif; font-size:1.5rem; font-weight:700; color:var(--accent); }
+    .msub   { font-size:.8rem; color:var(--muted); margin-top:2px; }
+    .xbtn {
+      background:var(--card); border:1.5px solid var(--border); color:var(--muted);
+      width:34px; height:34px; border-radius:9px; cursor:pointer; font-size:16px;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s;
+    }
+    .xbtn:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
+    .modal-body { padding:18px 22px 22px; }
+    .dgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+    .ditem { background:var(--card); border:1px solid var(--border); border-radius:11px; padding:11px 13px; }
+    .ditem.full { grid-column:1/-1; }
+    .dlbl { font-size:.65rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:500; margin-bottom:4px; font-family:'Rajdhani',sans-serif; }
+    .dval { font-size:.87rem; color:var(--text); line-height:1.4; word-break:break-word; }
+    .dval.hl { color:var(--accent); font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:600; }
+    .pdf-btn {
+      display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:13px;
+      background:linear-gradient(135deg,#1d4ed8,#2563eb); border:none; border-radius:11px;
+      color:#fff; font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700;
+      letter-spacing:.06em; cursor:pointer; text-decoration:none; transition:all .2s;
+      box-shadow:0 4px 16px rgba(29,78,216,.4);
+    }
+    .pdf-btn:hover { opacity:.88; transform:translateY(-1px); }
+
+    /* ═══════════════════════════════
+       ADMIN PANEL
+    ═══════════════════════════════ */
+    #adminView { display:none; }
+
+    /* Login */
+    #loginBox {
+      max-width:420px; margin:60px auto; background:var(--surface);
+      border:1.5px solid var(--border); border-radius:18px; padding:36px;
+      box-shadow:0 20px 60px rgba(0,0,0,.6);
+    }
+    .licon { font-size:2.2rem; text-align:center; margin-bottom:10px; }
+    #loginBox h2 { font-family:'Rajdhani',sans-serif; font-size:1.5rem; font-weight:700; text-align:center; color:var(--accent); margin-bottom:4px; }
+    #loginBox p { text-align:center; color:var(--muted); font-size:.8rem; margin-bottom:24px; }
+    .afield { margin-bottom:14px; }
+    .afield label { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:5px; font-family:'Rajdhani',sans-serif; }
+    .afield input {
+      width:100%; background:var(--card); border:1.5px solid var(--border); border-radius:9px;
+      color:var(--text); font-family:'DM Sans',sans-serif; font-size:.9rem; padding:11px 13px; outline:none; transition:border-color .2s;
+    }
+    .afield input:focus { border-color:var(--accent); }
+    .btn-login {
+      width:100%; padding:12px; background:var(--accent); border:none; border-radius:9px;
+      color:#000; font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700;
+      letter-spacing:.05em; cursor:pointer; margin-top:6px; transition:opacity .2s;
+    }
+    .btn-login:hover { opacity:.85; }
+    #lerr { color:var(--danger); font-size:.8rem; margin-top:8px; text-align:center; display:none; }
+
+    /* Admin dashboard */
+    #adminDash { display:none; }
+    .astats { max-width:1280px; margin:20px auto 0; padding:0 22px; display:flex; gap:12px; flex-wrap:wrap; }
+    .astat { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 18px; display:flex; align-items:center; gap:8px; }
+    .astat .n { font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700; color:var(--accent); }
+    .astat .l { font-size:.75rem; color:var(--muted); }
+
+    .atoolbar { max-width:1280px; margin:14px auto 0; padding:0 22px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .btn-addsite {
+      background:var(--accent); border:none; border-radius:9px; color:#000;
+      font-family:'Rajdhani',sans-serif; font-size:.92rem; font-weight:700; padding:9px 18px;
+      cursor:pointer; display:flex; align-items:center; gap:6px; transition:opacity .2s;
+    }
+    .btn-addsite:hover { opacity:.85; }
+    .btn-refresh {
+      background:rgba(59,130,246,.15); border:1.5px solid rgba(59,130,246,.3); color:#60a5fa;
+      border-radius:9px; font-size:.8rem; padding:8px 14px; cursor:pointer; transition:all .2s;
+    }
+    .btn-refresh:hover { background:rgba(59,130,246,.25); }
+    .btn-export {
+      background:rgba(16,185,129,.12); border:1.5px solid rgba(16,185,129,.3); color:#34d399;
+      border-radius:9px; font-size:.8rem; padding:8px 14px; cursor:pointer; transition:all .2s;
+    }
+    .btn-export:hover { background:rgba(16,185,129,.22); }
+    .btn-logout {
+      background:transparent; border:1.5px solid var(--border); color:var(--muted);
+      border-radius:9px; font-size:.78rem; padding:8px 13px; cursor:pointer; transition:all .2s; margin-left:auto;
+    }
+    .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+
+    .atbl-wrap { max-width:1280px; margin:14px auto 40px; padding:0 22px; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    thead tr { background:var(--card); border-bottom:2px solid var(--border); }
+    th { font-family:'Rajdhani',sans-serif; font-size:.68rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); padding:11px 13px; text-align:left; white-space:nowrap; }
+    tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+    tbody tr:hover { background:rgba(255,255,255,.03); }
+    td { padding:11px 13px; font-size:.82rem; vertical-align:middle; }
+    td.tsr { color:var(--muted); font-family:'Rajdhani',sans-serif; }
+    td.tfile { font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; color:var(--accent); white-space:nowrap; }
+    td.taddr { max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:.78rem; }
+    .tpchip { display:inline-block; font-size:.66rem; font-family:'Rajdhani',sans-serif; font-weight:600; padding:2px 9px; border-radius:20px; white-space:nowrap; }
+    .tpchip.fn { background:rgba(59,130,246,.15); color:#60a5fa; border:1px solid rgba(59,130,246,.3); }
+    .tpchip.fm { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.3); }
+    .acts { display:flex; gap:5px; }
+    .bedit { background:rgba(59,130,246,.12); border:1px solid rgba(59,130,246,.3); color:#60a5fa; border-radius:6px; padding:4px 11px; font-size:.75rem; cursor:pointer; transition:all .2s; }
+    .bedit:hover { background:rgba(59,130,246,.25); }
+    .bdel  { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#f87171; border-radius:6px; padding:4px 11px; font-size:.75rem; cursor:pointer; transition:all .2s; }
+    .bdel:hover  { background:rgba(239,68,68,.22); }
+    .apdfl { color:var(--accent2); font-size:.75rem; text-decoration:none; }
+    .apdfl:hover { text-decoration:underline; }
+    .nodata { text-align:center; padding:50px; color:var(--muted); }
+
+    /* ═══════════════════════════════
+       FORM MODAL (admin)
+    ═══════════════════════════════ */
+    .fmodal { background:var(--surface); border:1.5px solid var(--border); border-radius:18px; width:100%; max-width:650px; max-height:92vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,.8); animation:slideUp .22s ease; }
+    .fmhd { padding:20px 22px 14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:10; }
+    .fmhd h3 { font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700; color:var(--accent); }
+    .fmbody { padding:18px 22px 22px; }
+    .fgrid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+    .ffield { display:flex; flex-direction:column; gap:4px; }
+    .ffield.full { grid-column:1/-1; }
+    .ffield label { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-family:'Rajdhani',sans-serif; }
+    .ffield input, .ffield select {
+      background:var(--card); border:1.5px solid var(--border); border-radius:8px;
+      color:var(--text); font-family:'DM Sans',sans-serif; font-size:.87rem;
+      padding:10px 12px; outline:none; transition:border-color .2s;
+    }
+    .ffield input:focus, .ffield select:focus { border-color:var(--accent); }
+    .ffield select option { background:var(--card); }
+    .fmfoot { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+    .bcancel { background:var(--card); border:1.5px solid var(--border); color:var(--muted); border-radius:8px; padding:9px 18px; cursor:pointer; font-size:.87rem; transition:all .2s; }
+    .bcancel:hover { border-color:var(--muted); color:var(--text); }
+    .bsave { background:var(--accent); border:none; border-radius:8px; color:#000; font-family:'Rajdhani',sans-serif; font-size:.98rem; font-weight:700; padding:9px 24px; cursor:pointer; letter-spacing:.04em; transition:opacity .2s; }
+    .bsave:hover { opacity:.85; }
+
+    /* sheets sync notice */
+    .sheets-notice {
+      background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.25);
+      border-radius:10px; padding:11px 14px; margin-bottom:16px; font-size:.8rem; color:#34d399;
+      display:flex; align-items:center; gap:8px;
+    }
+
+    /* ═══════════════════════════════
+       CONFIRM DELETE
+    ═══════════════════════════════ */
+    .cbox { background:var(--surface); border:1.5px solid var(--border); border-radius:15px; width:100%; max-width:360px; padding:26px 22px; text-align:center; box-shadow:0 24px 80px rgba(0,0,0,.8); animation:slideUp .2s ease; }
+    .cbox .ci { font-size:2.2rem; margin-bottom:10px; }
+    .cbox h4 { font-family:'Rajdhani',sans-serif; font-size:1.15rem; font-weight:700; margin-bottom:6px; }
+    .cbox p { color:var(--muted); font-size:.82rem; margin-bottom:20px; }
+    .cacts { display:flex; gap:9px; justify-content:center; }
+    .bconfirm { background:var(--danger); border:none; border-radius:8px; color:#fff; font-family:'Rajdhani',sans-serif; font-size:.92rem; font-weight:700; padding:9px 22px; cursor:pointer; transition:opacity .2s; }
+    .bconfirm:hover { opacity:.85; }
+
+    /* ═══════════════════════════════
+       TOAST
+    ═══════════════════════════════ */
+    .toast { position:fixed; bottom:22px; right:22px; z-index:999; background:var(--surface); border:1.5px solid var(--border); border-radius:11px; padding:13px 18px; font-size:.85rem; box-shadow:0 8px 32px rgba(0,0,0,.5); display:flex; align-items:center; gap:9px; transform:translateY(70px); opacity:0; transition:all .3s ease; pointer-events:none; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.ok  { border-color:var(--success); }
+    .toast.err { border-color:var(--danger); }
+    .toast.ok  .ti { color:var(--success); }
+    .toast.err .ti { color:var(--danger); }
+
+    /* ═══════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════ */
+    @media(max-width:620px){
+      header { padding:14px 14px; flex-wrap:wrap; gap:10px; }
+      .htxt h1 { font-size:1.15rem; }
+      .controls,.grid,.astats,.atoolbar,.atbl-wrap { padding:0 12px; }
+      .grid { grid-template-columns:1fr; gap:11px; }
+      .fgrid,.dgrid { grid-template-columns:1fr; }
+      .modal,.fmodal { max-height:95vh; border-radius:14px; }
+      .badge-count { display:none; }
+    }
+
+    .modal::-webkit-scrollbar,.fmodal::-webkit-scrollbar { width:5px; }
+    .modal::-webkit-scrollbar-thumb,.fmodal::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="hicon">🏗️</div>
+  <div class="htxt">
+    <h1>ONGOING SITES — NARANPURA</h1>
+    <p>Ahmedabad Municipal Corporation · West Zone</p>
+  </div>
+  <div class="hright">
+    <span class="badge-count" id="hBadge">Loading…</span>
+    <button class="btn-admin-toggle" id="adminToggle" onclick="toggleAdminPanel()">⚙ Admin</button>
+  </div>
+</header>
+
+<!-- ══════════════ LOADING ══════════════ -->
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <p id="loadingMsg">Google Sheets se data load ho raha hai…</p>
+</div>
+
+<!-- ══════════════ PUBLIC VIEW ══════════════ -->
+<div id="publicView">
+  <div class="controls">
+    <div class="filter-row">
+      <span class="flabel">Filter:</span>
+      <button class="fbtn active" id="btnAll"       onclick="setFilter('all')">All Sites</button>
+      <button class="fbtn fn"     id="btnNaranpura" onclick="setFilter('naranpura')">TP 29 – Naranpura</button>
+      <button class="fbtn fm"     id="btnMemnagar"  onclick="setFilter('memnagar')">TP 19 – Memnagar</button>
+    </div>
+    <div class="search-wrap">
+      <span class="si">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search by address, file no., case no., plot no…" oninput="doSearch()"/>
+    </div>
+    <div class="stats-row">
+      <div id="resultCount">Showing <span id="countNum">0</span> sites</div>
+      <div class="sync-info"><span class="sync-dot"></span> Live · Google Sheets</div>
+    </div>
+  </div>
+  <div class="grid" id="cardGrid"></div>
+</div>
+
+<!-- ══════════════ DETAIL MODAL ══════════════ -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div><div class="mtitle" id="mTitle"></div><div class="msub" id="mSub"></div></div>
+      <button class="xbtn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="dgrid" id="mGrid"></div>
+      <a id="mPdf" class="pdf-btn" target="_blank" rel="noopener">📄 &nbsp; VIEW RAJACHITTHI PDF</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ ADMIN VIEW ══════════════ -->
+<div id="adminView">
+
+  <!-- Login -->
+  <div id="loginBox">
+    <div class="licon">🔐</div>
+    <h2>ADMIN LOGIN</h2>
+    <p>Naranpura Sites Management</p>
+    <div class="afield"><label>Password</label>
+      <input type="password" id="apass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn-login" onclick="doLogin()">LOGIN →</button>
+    <div id="lerr">❌ Galat password!</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="adminDash">
+    <div class="astats">
+      <div class="astat"><span class="n" id="aStat0">0</span><span class="l">Total Sites</span></div>
+      <div class="astat"><span class="n" id="aStat1" style="color:#60a5fa">0</span><span class="l">TP 29 – Naranpura</span></div>
+      <div class="astat"><span class="n" id="aStat2" style="color:#34d399">0</span><span class="l">TP 19 – Memnagar</span></div>
+    </div>
+    <div class="atoolbar">
+      <button class="btn-addsite" onclick="openAdd()">＋ Add Site</button>
+      <button class="btn-refresh" onclick="fetchSheetData(true)">🔄 Refresh from Sheets</button>
+      <button class="btn-export"  onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn-logout"  onclick="doLogout()">Logout</button>
+    </div>
+
+    <!-- Sheets notice -->
+    <div style="max-width:1280px;margin:14px auto 0;padding:0 22px;">
+      <div class="sheets-notice">
+        📊 <strong>Google Sheets Connected.</strong> &nbsp;Yahan se add/edit/delete karo. Changes <em>Google Sheet mein manually update karne padenge</em> ya neeche ka guide follow karo. CSV export karke Sheet mein import karo — public site automatically refresh hogi.
+      </div>
+    </div>
+
+    <div class="atbl-wrap">
+      <table>
+        <thead><tr>
+          <th>SR.</th><th>File No.</th><th>T.P Scheme</th><th>Plot No.</th>
+          <th>Address</th><th>Rajachitthi No.</th><th>Date</th><th>PDF</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="adminTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ FORM MODAL ══════════════ -->
+<div class="overlay" id="formOverlay">
+  <div class="fmodal">
+    <div class="fmhd">
+      <h3 id="formTitle">Add New Site</h3>
+      <button class="xbtn" onclick="closeForm()">✕</button>
+    </div>
+    <div class="fmbody">
+      <input type="hidden" id="fIdx"/>
+      <div class="fgrid">
+        <div class="ffield"><label>File Number *</label><input type="text" id="fFile" placeholder="e.g. CC-200"/></div>
+        <div class="ffield"><label>T.P Scheme *</label>
+          <select id="fTP"><option value="29 (NARANPURA)">29 (NARANPURA)</option><option value="19 (MEMNAGAR)">19 (MEMNAGAR)</option></select>
+        </div>
+        <div class="ffield full"><label>Case Number</label><input type="text" id="fCase" placeholder="BHNTI/WZ/…"/></div>
+        <div class="ffield"><label>Rajachitthi Number</label><input type="text" id="fRaja" placeholder="07500/…"/></div>
+        <div class="ffield"><label>Issued Date</label><input type="text" id="fDate" placeholder="1/15/2025"/></div>
+        <div class="ffield"><label>Final Plot Number</label><input type="text" id="fPlot" placeholder="436"/></div>
+        <div class="ffield"><label>Sub Plot / Tena</label><input type="text" id="fSub" placeholder="-"/></div>
+        <div class="ffield"><label>Block Number</label><input type="text" id="fBlock" placeholder="A+B"/></div>
+        <div class="ffield full"><label>Total Blocks</label><input type="text" id="fTotal" placeholder="(A)+(B)+(C)"/></div>
+        <div class="ffield full"><label>Address *</label><input type="text" id="fAddr" placeholder="Full site address…"/></div>
+        <div class="ffield full"><label>PDF Link (Google Drive)</label><input type="text" id="fPdf" placeholder="https://drive.google.com/open?id=…"/></div>
+      </div>
+      <div class="fmfoot">
+        <button class="bcancel" onclick="closeForm()">Cancel</button>
+        <button class="bsave"   onclick="saveSite()">SAVE SITE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CONFIRM DELETE ══════════════ -->
+<div class="overlay" id="confirmOverlay">
+  <div class="cbox">
+    <div class="ci">🗑️</div>
+    <h4>Delete Site?</h4>
+    <p id="cMsg">Ye site delete ho jayegi.</p>
+    <div class="cacts">
+      <button class="bcancel" onclick="closeConfirm()">Cancel</button>
+      <button class="bconfirm" onclick="doDelete()">DELETE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div class="toast" id="toast"><span class="ti" id="tIcon">✓</span><span id="tMsg"></span></div>
+
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+const SHEET_ID  = '1_X79BaSRXRYCLv74rcGoWv9HWGKl6nCsV2XkoN8cHb8';
+const API_KEY   = 'AIzaSyAb_xosm0HyuCiiXRxOtJX8qYXgjzWvGsk';
+const SHEET_TAB = 'Sheet1';   // ← Google Sheet ka tab name (default Sheet1)
+const ADMIN_PASS = 'naranpura2024';   // ← password change karna ho toh yahan
+const LS_KEY     = 'nara_local_data';
+const LS_ADMIN   = 'nara_admin_edits';
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let DATA        = [];   // master data (sheets + local edits merged)
+let localEdits  = {};   // {sr: rowObject} for admin changes not yet in sheet
+let activeFilter = 'all';
+let searchTerm   = '';
+let deleteTarget = -1;
+let isAdmin      = false;
+let adminLoggedIn = false;
+let sheetFetched = false;
+
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  loadLocalEdits();
+  fetchSheetData(false);
+});
+
+/* ══════════════════════════════════════════
+   GOOGLE SHEETS FETCH
+══════════════════════════════════════════ */
+async function fetchSheetData(showToastOnDone) {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('loadingMsg').textContent = 'Google Sheets se data load ho raha hai…';
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_TAB)}?key=${API_KEY}`;
+  try {
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+
+    const rows = json.values || [];
+    if (rows.length < 2) throw new Error('Sheet empty hai ya headers missing hain.');
+
+    const headers = rows[0].map(h => h.trim());
+    const parsed  = rows.slice(1).map((row, i) => {
+      const obj = {};
+      headers.forEach((h, j) => obj[h] = (row[j] || '').trim() || '-');
+      if (!obj['SR.']) obj['SR.'] = i + 1;
+      else obj['SR.'] = parseInt(obj['SR.']) || (i + 1);
+      return obj;
+    });
+
+    // Merge local admin edits on top of sheet data
+    DATA = mergeEdits(parsed);
+    localStorage.setItem(LS_KEY, JSON.stringify(DATA));
+    sheetFetched = true;
+
+    if (showToastOnDone) showToast('✅ Sheets se data refresh ho gaya!', 'ok');
+  } catch (err) {
+    console.warn('Sheets fetch failed:', err.message);
+    // Fallback to cached data
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      DATA = JSON.parse(cached);
+      showToast('⚠️ Sheets unavailable — cached data use ho raha hai', 'err');
+    } else {
+      document.getElementById('loadingMsg').textContent = '❌ Data load nahi hua. Sheet public hai? API key sahi hai?';
+      return;
+    }
+  }
+
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('hBadge').textContent = DATA.length + ' Sites';
+  renderPublic();
+  if (adminLoggedIn) renderAdminTable('');
+}
+
+/* ══════════════════════════════════════════
+   LOCAL EDITS (admin changes stored locally)
+══════════════════════════════════════════ */
+function loadLocalEdits() {
+  try { localEdits = JSON.parse(localStorage.getItem(LS_ADMIN) || '{}'); }
+  catch { localEdits = {}; }
+}
+
+function saveLocalEdits() {
+  localStorage.setItem(LS_ADMIN, JSON.stringify(localEdits));
+}
+
+function mergeEdits(sheetData) {
+  // Start with sheet rows, apply local edits/additions/deletions
+  const byKey = {};
+  sheetData.forEach(r => byKey[String(r['SR.'])] = {...r});
+
+  // Apply edits
+  Object.entries(localEdits).forEach(([key, val]) => {
+    if (val === null) delete byKey[key];          // deleted
+    else byKey[key] = val;                        // added/edited
+  });
+
+  // Sort by SR
+  return Object.values(byKey).sort((a,b) => (a['SR.']||0) - (b['SR.']||0));
+}
+
+/* ══════════════════════════════════════════
+   PUBLIC RENDER
+══════════════════════════════════════════ */
+function zone(d) { return (d['T.P SCHEME NUMBER'] || '').includes('19') ? 'memnagar' : 'naranpura'; }
+
+function getFiltered() {
+  return DATA.filter(d => {
+    const z = zone(d);
+    const mf = activeFilter === 'all' || z === activeFilter;
+    const q  = searchTerm.toLowerCase();
+    const ms = !q || Object.values(d).some(v => String(v).toLowerCase().includes(q));
+    return mf && ms;
+  });
+}
+
+function renderPublic() {
+  document.getElementById('publicView').style.display = 'block';
+  const grid     = document.getElementById('cardGrid');
+  const filtered = getFiltered();
+  document.getElementById('countNum').textContent = filtered.length;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="no-results"><div class="emo">🔎</div><p>Koi site nahi mili. Search ya filter change karo.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((d, i) => {
+    const z  = zone(d);
+    const bc = z === 'memnagar' ? 'fm' : 'fn';
+    const bl = z === 'memnagar' ? 'TP 19 – Memnagar' : 'TP 29 – Naranpura';
+    const idx = DATA.indexOf(d);
+    return `
+      <div class="pcard ${bc}" onclick="openDetail(${idx})">
+        <div class="pcard-hd">
+          <span class="pcard-sr">SR. ${d['SR.']}</span>
+          <span class="tp-badge ${bc}">${bl}</span>
+        </div>
+        <div class="pcard-file">${d['FILE NUMBER']}</div>
+        <div class="pcard-addr">${d['ADDRESS']}</div>
+        <div class="pcard-ft">
+          <div class="plot-info">Plot: <strong>${d['FINAL PLOT NUMBER']}</strong></div>
+          <div class="view-lbl">Details ›</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  ['All','Naranpura','Memnagar'].forEach(n => document.getElementById('btn'+n).classList.remove('active'));
+  document.getElementById('btn' + f.charAt(0).toUpperCase() + f.slice(1)).classList.add('active');
+  renderPublic();
+}
+
+function doSearch() {
+  searchTerm = document.getElementById('searchInput').value;
+  renderPublic();
+}
+
+/* ══════════════════════════════════════════
+   DETAIL MODAL
+══════════════════════════════════════════ */
+function openDetail(idx) {
+  const d = DATA[idx];
+  document.getElementById('mTitle').textContent = d['FILE NUMBER'];
+  document.getElementById('mSub').textContent   = d['ADDRESS'];
+
+  const fields = [
+    ['SR. Number',       d['SR.'],                          false],
+    ['File Number',      d['FILE NUMBER'],                  true],
+    ['T.P Scheme',       d['T.P SCHEME NUMBER'],            false],
+    ['Final Plot No.',   d['FINAL PLOT NUMBER'],            true],
+    ['Case Number',      d['CASE NUMBER'],                  false, true],
+    ['Rajachitthi No.',  d['RAJACHITHHI NUMBER'],           false],
+    ['Issued Date',      d['RAJACHITHHI ISSUED DATE'],      false],
+    ['Sub Plot / Tena',  d['SUB PLOT NUMBER/ TENA NUMBER'], false],
+    ['Block Number',     d['BLOCK NUMBER'],                 false],
+    ['Total Blocks',     d['TOTAL BLOCKS'],                 false],
+    ['Address',          d['ADDRESS'],                      false, true],
+  ];
+
+  document.getElementById('mGrid').innerHTML = fields.map(([lbl, val, hl, full]) =>
+    `<div class="ditem${full?' full':''}">
+      <div class="dlbl">${lbl}</div>
+      <div class="dval${hl?' hl':''}">${val}</div>
+    </div>`
+  ).join('');
+
+  const pdfLink = d['PDF OF RAJACHITTHI'];
+  const pdfEl = document.getElementById('mPdf');
+  pdfEl.href = (pdfLink && pdfLink !== '-') ? pdfLink : '#';
+  pdfEl.style.opacity = (pdfLink && pdfLink !== '-') ? '1' : '0.4';
+  pdfEl.style.pointerEvents = (pdfLink && pdfLink !== '-') ? 'auto' : 'none';
+
+  document.getElementById('detailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ══════════════════════════════════════════
+   ADMIN TOGGLE
+══════════════════════════════════════════ */
+function toggleAdminPanel() {
+  isAdmin = !isAdmin;
+  document.getElementById('adminToggle').classList.toggle('active', isAdmin);
+
+  if (isAdmin) {
+    document.getElementById('publicView').style.display = 'none';
+    document.getElementById('adminView').style.display  = 'block';
+    if (!adminLoggedIn) {
+      document.getElementById('loginBox').style.display  = 'block';
+      document.getElementById('adminDash').style.display = 'none';
+    } else {
+      document.getElementById('loginBox').style.display  = 'none';
+      document.getElementById('adminDash').style.display = 'block';
+    }
+  } else {
+    document.getElementById('adminView').style.display  = 'none';
+    document.getElementById('publicView').style.display = 'block';
+  }
+}
+
+/* ══════════════════════════════════════════
+   ADMIN LOGIN / LOGOUT
+══════════════════════════════════════════ */
+function doLogin() {
+  const p = document.getElementById('apass').value;
+  if (p === ADMIN_PASS) {
+    adminLoggedIn = true;
+    document.getElementById('loginBox').style.display  = 'none';
+    document.getElementById('adminDash').style.display = 'block';
+    renderAdminTable('');
+    updateAdminStats();
+  } else {
+    document.getElementById('lerr').style.display = 'block';
+    setTimeout(() => document.getElementById('lerr').style.display = 'none', 2500);
+  }
+}
+
+function doLogout() {
+  adminLoggedIn = false;
+  isAdmin = false;
+  document.getElementById('adminToggle').classList.remove('active');
+  document.getElementById('apass').value = '';
+  document.getElementById('adminView').style.display  = 'none';
+  document.getElementById('publicView').style.display = 'block';
+}
+
+/* ══════════════════════════════════════════
+   ADMIN TABLE
+══════════════════════════════════════════ */
+function updateAdminStats() {
+  document.getElementById('aStat0').textContent = DATA.length;
+  document.getElementById('aStat1').textContent = DATA.filter(d => (d['T.P SCHEME NUMBER']||'').includes('29')).length;
+  document.getElementById('aStat2').textContent = DATA.filter(d => (d['T.P SCHEME NUMBER']||'').includes('19')).length;
+  document.getElementById('hBadge').textContent = DATA.length + ' Sites';
+}
+
+function renderAdminTable(q) {
+  const tb = document.getElementById('adminTbody');
+  const rows = q ? DATA.filter(d => Object.values(d).some(v => String(v).toLowerCase().includes(q.toLowerCase()))) : DATA;
+
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="9" class="nodata">Koi site nahi mili 🔎</td></tr>`; return; }
+
+  tb.innerHTML = rows.map(d => {
+    const ri = DATA.indexOf(d);
+    const fn = (d['T.P SCHEME NUMBER']||'').includes('29');
+    return `<tr>
+      <td class="tsr">${d['SR.']}</td>
+      <td class="tfile">${d['FILE NUMBER']}</td>
+      <td><span class="tpchip ${fn?'fn':'fm'}">${d['T.P SCHEME NUMBER']}</span></td>
+      <td style="white-space:nowrap">${d['FINAL PLOT NUMBER']}</td>
+      <td class="taddr" title="${d['ADDRESS']}">${d['ADDRESS']}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${d['RAJACHITHHI NUMBER']}</td>
+      <td style="font-size:.75rem;white-space:nowrap">${d['RAJACHITHHI ISSUED DATE']}</td>
+      <td><a href="${d['PDF OF RAJACHITTHI']}" target="_blank" class="apdfl">📄 PDF</a></td>
+      <td><div class="acts">
+        <button class="bedit" onclick="openEdit(${ri})">✏️ Edit</button>
+        <button class="bdel"  onclick="askDelete(${ri})">🗑 Del</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   ADD / EDIT FORM
+══════════════════════════════════════════ */
+function openAdd() {
+  document.getElementById('formTitle').textContent = 'Add New Site';
+  document.getElementById('fIdx').value = '-1';
+  ['fFile','fCase','fRaja','fDate','fPlot','fAddr','fPdf'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fSub').value   = '-';
+  document.getElementById('fBlock').value = '-';
+  document.getElementById('fTotal').value = '-';
+  document.getElementById('fTP').value    = '29 (NARANPURA)';
+  openOverlay('formOverlay');
+}
+
+function openEdit(idx) {
+  const d = DATA[idx];
+  document.getElementById('formTitle').textContent = 'Edit Site — ' + d['FILE NUMBER'];
+  document.getElementById('fIdx').value   = idx;
+  document.getElementById('fFile').value  = d['FILE NUMBER']  || '';
+  document.getElementById('fTP').value    = d['T.P SCHEME NUMBER'] || '29 (NARANPURA)';
+  document.getElementById('fCase').value  = d['CASE NUMBER']  || '';
+  document.getElementById('fRaja').value  = d['RAJACHITHHI NUMBER'] || '';
+  document.getElementById('fDate').value  = d['RAJACHITHHI ISSUED DATE'] || '';
+  document.getElementById('fPlot').value  = d['FINAL PLOT NUMBER'] || '';
+  document.getElementById('fSub').value   = d['SUB PLOT NUMBER/ TENA NUMBER'] || '-';
+  document.getElementById('fBlock').value = d['BLOCK NUMBER'] || '-';
+  document.getElementById('fTotal').value = d['TOTAL BLOCKS'] || '-';
+  document.getElementById('fAddr').value  = d['ADDRESS']  || '';
+  document.getElementById('fPdf').value   = d['PDF OF RAJACHITTHI'] || '';
+  openOverlay('formOverlay');
+}
+
+function closeForm() { closeOverlay('formOverlay'); }
+
+function saveSite() {
+  const file = document.getElementById('fFile').value.trim();
+  const addr = document.getElementById('fAddr').value.trim();
+  if (!file || !addr) { showToast('File Number aur Address zaroori hai!', 'err'); return; }
+
+  const idx = parseInt(document.getElementById('fIdx').value);
+  const entry = {
+    'FILE NUMBER':                   file,
+    'T.P SCHEME NUMBER':             document.getElementById('fTP').value,
+    'CASE NUMBER':                   document.getElementById('fCase').value.trim()  || '-',
+    'RAJACHITHHI NUMBER':            document.getElementById('fRaja').value.trim()  || '-',
+    'RAJACHITHHI ISSUED DATE':       document.getElementById('fDate').value.trim()  || '-',
+    'FINAL PLOT NUMBER':             document.getElementById('fPlot').value.trim()  || '-',
+    'SUB PLOT NUMBER/ TENA NUMBER':  document.getElementById('fSub').value.trim()   || '-',
+    'BLOCK NUMBER':                  document.getElementById('fBlock').value.trim() || '-',
+    'TOTAL BLOCKS':                  document.getElementById('fTotal').value.trim() || '-',
+    'ADDRESS':                       addr,
+    'PDF OF RAJACHITTHI':            document.getElementById('fPdf').value.trim()   || '-',
+  };
+
+  if (idx === -1) {
+    const newSR = DATA.length ? Math.max(...DATA.map(d => d['SR.']||0)) + 1 : 1;
+    entry['SR.'] = newSR;
+    DATA.push(entry);
+    localEdits[String(newSR)] = entry;
+    showToast('✅ Naya site add ho gaya! (CSV export karke Sheet update karo)', 'ok');
+  } else {
+    entry['SR.'] = DATA[idx]['SR.'];
+    DATA[idx] = entry;
+    localEdits[String(entry['SR.'])] = entry;
+    showToast('✏️ Site update ho gaya! (CSV export karke Sheet update karo)', 'ok');
+  }
+
+  saveLocalEdits();
+  localStorage.setItem(LS_KEY, JSON.stringify(DATA));
+  renderAdminTable('');
+  renderPublic();
+  updateAdminStats();
+  closeForm();
+}
+
+/* ══════════════════════════════════════════
+   DELETE
+══════════════════════════════════════════ */
+function askDelete(idx) {
+  deleteTarget = idx;
+  document.getElementById('cMsg').textContent = `"${DATA[idx]['FILE NUMBER']} – ${DATA[idx]['ADDRESS'].substring(0,50)}…" delete karein?`;
+  openOverlay('confirmOverlay');
+}
+
+function closeConfirm() { closeOverlay('confirmOverlay'); deleteTarget = -1; }
+
+function doDelete() {
+  if (deleteTarget < 0) return;
+  const sr   = DATA[deleteTarget]['SR.'];
+  const name = DATA[deleteTarget]['FILE NUMBER'];
+  localEdits[String(sr)] = null;  // mark deleted
+  DATA.splice(deleteTarget, 1);
+  // renumber SR
+  DATA.forEach((d, i) => d['SR.'] = i + 1);
+  saveLocalEdits();
+  localStorage.setItem(LS_KEY, JSON.stringify(DATA));
+  renderAdminTable('');
+  renderPublic();
+  updateAdminStats();
+  closeConfirm();
+  showToast(`🗑️ "${name}" delete ho gaya! (CSV export karke Sheet update karo)`, 'ok');
+}
+
+/* ══════════════════════════════════════════
+   EXPORT CSV
+══════════════════════════════════════════ */
+function exportCSV() {
+  const cols = ['SR.','FILE NUMBER','CASE NUMBER','RAJACHITHHI NUMBER','RAJACHITHHI ISSUED DATE',
+    'T.P SCHEME NUMBER','FINAL PLOT NUMBER','SUB PLOT NUMBER/ TENA NUMBER','BLOCK NUMBER','TOTAL BLOCKS',
+    'ADDRESS','PDF OF RAJACHITTHI'];
+  const rows = [
+    cols.join(','),
+    ...DATA.map(d => cols.map(c => `"${String(d[c]||'').replace(/"/g,'""')}"`).join(','))
+  ];
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ONGOING_SITES_NARANPURA_UPDATED.csv';
+  a.click();
+  showToast('📥 CSV export ho gaya! Ab Sheet mein import karo.', 'ok');
+}
+
+/* ══════════════════════════════════════════
+   OVERLAY HELPERS
+══════════════════════════════════════════ */
+function openOverlay(id)  { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  document.getElementById('tMsg').textContent  = msg;
+  document.getElementById('tIcon').textContent = type === 'ok' ? '✓' : '!';
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+/* ══════════════════════════════════════════
+   KEYBOARD
+══════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeForm(); closeConfirm(); }
+});
+</script>
+</body>
+</html>
