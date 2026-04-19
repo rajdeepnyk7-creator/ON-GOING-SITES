@@ -2,158 +2,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sheet Viewer</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard</title>
 
-  <style>
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    input {
-      padding: 8px;
-      width: 100%;
-      max-width: 400px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-      border: none;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #1e293b;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #334155;
-      text-align: left;
-    }
-
-    th {
-      background: #334155;
-    }
-
-    tr:hover {
-      background: #475569;
-    }
-
-    .status {
-      margin-bottom: 10px;
-      font-size: 14px;
-      color: #94a3b8;
-    }
-  </style>
+<style>
+body { font-family: Inter, sans-serif; background:#0f172a; color:#fff; padding:20px; }
+button { padding:6px 10px; margin:5px; cursor:pointer; }
+table { width:100%; border-collapse: collapse; margin-top:10px;}
+th,td { padding:8px; border:1px solid #334155; }
+th { cursor:pointer; background:#1e293b; }
+.card { background:#1e293b; padding:10px; margin:10px 0; border-radius:10px;}
+</style>
 </head>
 
 <body>
 
-  <h1>📊 Live Sheet Data</h1>
-  <div class="status" id="status">Loading...</div>
-  <input type="text" id="search" placeholder="Search..." />
+<h2>📊 Dashboard</h2>
 
-  <table id="table">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+<a href="admin.html"><button>⚙️ Admin Panel</button></a>
 
-  <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQC1s8OV_Te8GtcwqbQRGfQyATRX0tyTX2rDjKuA74YB9W5yx3A2Ur77VkDMMZK3CSo-kgW-XuyHvDl/pub?gid=1660623033&single=true&output=csv";
+<input id="search" placeholder="Search..." />
+<button onclick="toggleView()">Toggle View</button>
 
-    let rawData = [];
+<div id="tableView"></div>
+<div id="cardView" style="display:none"></div>
 
-    async function fetchCSV() {
-      try {
-        document.getElementById("status").innerText = "Fetching data...";
+<script>
+const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQC1s8OV_Te8GtcwqbQRGfQyATRX0tyTX2rDjKuA74YB9W5yx3A2Ur77VkDMMZK3CSo-kgW-XuyHvDl/pub?output=csv";
 
-        const res = await fetch(CSV_URL);
-        const text = await res.text();
+let data=[], headers=[], isTable=true;
 
-        rawData = parseCSV(text);
-        renderTable(rawData);
+async function load(){
+  const res = await fetch(URL);
+  const text = await res.text();
+  parse(text);
+  render();
+}
 
-        document.getElementById("status").innerText = 
-          `Updated: ${new Date().toLocaleTimeString()}`;
+function parse(text){
+  const rows = text.trim().split("\n").map(r=>r.split(","));
+  headers = rows.shift();
+  data = rows.map(r=>{
+    let obj={};
+    headers.forEach((h,i)=>obj[h]=r[i]);
+    return obj;
+  });
+}
 
-      } catch (err) {
-        document.getElementById("status").innerText = "Error loading data";
-        console.error(err);
+function render(){
+  renderTable(data);
+  renderCards(data);
+}
+
+function renderTable(d){
+  let html="<table><tr>";
+  headers.forEach(h=> html+=`<th onclick="sort('${h}')">${h}</th>`);
+  html+="</tr>";
+
+  d.forEach(r=>{
+    html+="<tr>";
+    headers.forEach((h,i)=>{
+      if(i===headers.length-1){
+        html+=`<td><a href="${r[h]}" target="_blank"><button>PDF</button></a></td>`;
+      } else {
+        html+=`<td>${r[h]}</td>`;
       }
-    }
-
-    function parseCSV(text) {
-      const rows = text.trim().split("\n").map(r => r.split(","));
-      const headers = rows.shift();
-
-      return rows.map(row => {
-        let obj = {};
-        headers.forEach((h, i) => obj[h] = row[i]);
-        return obj;
-      });
-    }
-
-    function renderTable(data) {
-      const tableHead = document.querySelector("#table thead");
-      const tableBody = document.querySelector("#table tbody");
-
-      tableHead.innerHTML = "";
-      tableBody.innerHTML = "";
-
-      if (!data.length) return;
-
-      const headers = Object.keys(data[0]);
-
-      // Header
-      const headerRow = document.createElement("tr");
-      headers.forEach(h => {
-        const th = document.createElement("th");
-        th.innerText = h;
-        headerRow.appendChild(th);
-      });
-      tableHead.appendChild(headerRow);
-
-      // Body
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        headers.forEach(h => {
-          const td = document.createElement("td");
-          td.innerText = row[h];
-          tr.appendChild(td);
-        });
-        tableBody.appendChild(tr);
-      });
-    }
-
-    // Search filter
-    document.getElementById("search").addEventListener("input", e => {
-      const val = e.target.value.toLowerCase();
-
-      const filtered = rawData.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(val)
-        )
-      );
-
-      renderTable(filtered);
     });
+    html+="</tr>";
+  });
 
-    // Auto refresh every 30 sec
-    setInterval(fetchCSV, 30000);
+  html+="</table>";
+  document.getElementById("tableView").innerHTML=html;
+}
 
-    fetchCSV();
-  </script>
+function renderCards(d){
+  let html="";
+  d.forEach(r=>{
+    html+=`<div class="card">`;
+    headers.forEach((h,i)=>{
+      if(i===headers.length-1){
+        html+=`<a href="${r[h]}" target="_blank"><button>Open PDF</button></a>`;
+      } else {
+        html+=`<p><b>${h}:</b> ${r[h]}</p>`;
+      }
+    });
+    html+=`</div>`;
+  });
+  document.getElementById("cardView").innerHTML=html;
+}
+
+function toggleView(){
+  isTable=!isTable;
+  document.getElementById("tableView").style.display=isTable?"block":"none";
+  document.getElementById("cardView").style.display=isTable?"none":"block";
+}
+
+function sort(col){
+  data.sort((a,b)=>a[col].localeCompare(b[col]));
+  render();
+}
+
+document.getElementById("search").addEventListener("input",e=>{
+  const val=e.target.value.toLowerCase();
+  const filtered=data.filter(r=>Object.values(r).some(v=>v.toLowerCase().includes(val)));
+  renderTable(filtered);
+  renderCards(filtered);
+});
+
+load();
+</script>
 
 </body>
 </html>
