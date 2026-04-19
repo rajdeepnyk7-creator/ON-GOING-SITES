@@ -2,16 +2,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 
 <style>
-body { font-family: Inter, sans-serif; background:#0f172a; color:#fff; padding:20px; }
-button { padding:6px 10px; margin:5px; cursor:pointer; }
-table { width:100%; border-collapse: collapse; margin-top:10px;}
-th,td { padding:8px; border:1px solid #334155; }
-th { cursor:pointer; background:#1e293b; }
+body { font-family: Arial; background:#0f172a; color:#fff; padding:20px;}
+input { padding:8px; margin:10px 0; width:300px;}
+button { padding:6px 10px; margin:5px; cursor:pointer;}
+table { width:100%; border-collapse: collapse;}
+th,td { border:1px solid #334155; padding:8px;}
+th { cursor:pointer; background:#1e293b;}
 .card { background:#1e293b; padding:10px; margin:10px 0; border-radius:10px;}
 </style>
 </head>
@@ -19,35 +20,28 @@ th { cursor:pointer; background:#1e293b; }
 <body>
 
 <h2>📊 Dashboard</h2>
-
 <a href="admin.html"><button>⚙️ Admin Panel</button></a>
 
-<input id="search" placeholder="Search..." />
+<br>
+<input id="search" placeholder="Search...">
 <button onclick="toggleView()">Toggle View</button>
 
 <div id="tableView"></div>
 <div id="cardView" style="display:none"></div>
 
 <script>
-const URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQC1s8OV_Te8GtcwqbQRGfQyATRX0tyTX2rDjKuA74YB9W5yx3A2Ur77VkDMMZK3CSo-kgW-XuyHvDl/pub?output=csv";
+const API = "https://script.google.com/macros/s/AKfycbx9kttMX7Q4792PSYQaE--6TR2pM1EW87JaEw7iWoR8dfjMI-ZrSyLPxr-dnardgEyJuQ/exec";
 
 let data=[], headers=[], isTable=true;
 
 async function load(){
-  const res = await fetch(URL);
-  const text = await res.text();
-  parse(text);
-  render();
-}
+  const res = await fetch(API);
+  const json = await res.json();
 
-function parse(text){
-  const rows = text.trim().split("\n").map(r=>r.split(","));
-  headers = rows.shift();
-  data = rows.map(r=>{
-    let obj={};
-    headers.forEach((h,i)=>obj[h]=r[i]);
-    return obj;
-  });
+  headers = json[0];
+  data = json.slice(1);
+
+  render();
 }
 
 function render(){
@@ -64,9 +58,9 @@ function renderTable(d){
     html+="<tr>";
     headers.forEach((h,i)=>{
       if(i===headers.length-1){
-        html+=`<td><a href="${r[h]}" target="_blank"><button>PDF</button></a></td>`;
+        html+=`<td><a href="${r[i]}" target="_blank"><button>PDF</button></a></td>`;
       } else {
-        html+=`<td>${r[h]}</td>`;
+        html+=`<td>${r[i]}</td>`;
       }
     });
     html+="</tr>";
@@ -82,9 +76,9 @@ function renderCards(d){
     html+=`<div class="card">`;
     headers.forEach((h,i)=>{
       if(i===headers.length-1){
-        html+=`<a href="${r[h]}" target="_blank"><button>Open PDF</button></a>`;
+        html+=`<a href="${r[i]}" target="_blank"><button>Open PDF</button></a>`;
       } else {
-        html+=`<p><b>${h}:</b> ${r[h]}</p>`;
+        html+=`<p><b>${h}:</b> ${r[i]}</p>`;
       }
     });
     html+=`</div>`;
@@ -99,17 +93,19 @@ function toggleView(){
 }
 
 function sort(col){
-  data.sort((a,b)=>a[col].localeCompare(b[col]));
+  const index = headers.indexOf(col);
+  data.sort((a,b)=> (a[index]||"").localeCompare(b[index]||""));
   render();
 }
 
 document.getElementById("search").addEventListener("input",e=>{
   const val=e.target.value.toLowerCase();
-  const filtered=data.filter(r=>Object.values(r).some(v=>v.toLowerCase().includes(val)));
+  const filtered=data.filter(r=>r.some(v=>String(v).toLowerCase().includes(val)));
   renderTable(filtered);
   renderCards(filtered);
 });
 
+setInterval(load,30000);
 load();
 </script>
 
