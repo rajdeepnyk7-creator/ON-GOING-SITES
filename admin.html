@@ -1,38 +1,14 @@
-<!-- /admin.html -->
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Admin Panel</title>
-<style>
-body { font-family: sans-serif; padding:20px; background:#111; color:#fff;}
-table { width:100%; border-collapse: collapse;}
-td,th { border:1px solid #333; padding:6px;}
-input { width:100%; background:#222; color:#fff; border:none;}
-button { margin:5px; padding:5px;}
-</style>
-</head>
-
-<body>
-
-<h2>⚙️ Admin Panel</h2>
-<a href="index.html">⬅ Back</a>
-
-<button onclick="addRow()">➕ Add Row</button>
-<button onclick="downloadCSV()">💾 Download CSV</button>
-
-<table id="table"></table>
-
 <script>
+const API = "https://script.google.com/macros/s/AKfycbyDjYONeQYSOxe9CEU4DHE8p58Xnhp_1a8ZVKWIRQw3-YtBBiJpxHPEFnCAFSg0ZYF4zQ/exec";
+
 let headers=[], data=[];
 
 async function load(){
-  const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQC1s8OV_Te8GtcwqbQRGfQyATRX0tyTX2rDjKuA74YB9W5yx3A2Ur77VkDMMZK3CSo-kgW-XuyHvDl/pub?output=csv");
-  const text = await res.text();
+  const res = await fetch(API);
+  const json = await res.json();
 
-  const rows=text.trim().split("\n").map(r=>r.split(","));
-  headers=rows.shift();
-  data=rows;
+  headers = json[0];
+  data = json.slice(1);
 
   render();
 }
@@ -47,7 +23,11 @@ function render(){
     row.forEach((cell,j)=>{
       html+=`<td><input value="${cell}" onchange="update(${i},${j},this.value)"></td>`;
     });
-    html+=`<td><button onclick="del(${i})">❌</button></td>`;
+    html+=`
+      <td>
+        <button onclick="save(${i})">💾</button>
+        <button onclick="del(${i})">❌</button>
+      </td>`;
     html+="</tr>";
   });
 
@@ -58,29 +38,43 @@ function update(i,j,val){
   data[i][j]=val;
 }
 
-function addRow(){
-  data.push(Array(headers.length).fill(""));
-  render();
+async function save(i){
+  await fetch(API,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"update",
+      rowIndex:i+1,
+      row:data[i]
+    })
+  });
+  alert("Updated");
 }
 
-function del(i){
-  data.splice(i,1);
-  render();
+async function addRow(){
+  let newRow = Array(headers.length).fill("");
+
+  await fetch(API,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"add",
+      row:newRow
+    })
+  });
+
+  load();
 }
 
-function downloadCSV(){
-  let csv=headers.join(",")+"\n";
-  data.forEach(r=> csv+=r.join(",")+"\n");
+async function del(i){
+  await fetch(API,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"delete",
+      rowIndex:i+1
+    })
+  });
 
-  const blob=new Blob([csv],{type:"text/csv"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="data.csv";
-  a.click();
+  load();
 }
 
 load();
 </script>
-
-</body>
-</html>
