@@ -1,3 +1,29 @@
+<!-- /admin.html -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+
+<style>
+body { font-family: Arial; background:#111; color:#fff; padding:20px;}
+table { width:100%; border-collapse: collapse;}
+td,th { border:1px solid #333; padding:6px;}
+input { width:100%; background:#222; color:#fff; border:none;}
+button { padding:5px; margin:5px;}
+</style>
+</head>
+
+<body>
+
+<h2>⚙️ Admin Panel</h2>
+<a href="index.html">⬅ Back</a>
+
+<br>
+<button onclick="addRow()">➕ Add Row</button>
+
+<table id="table"></table>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbx9kttMX7Q4792PSYQaE--6TR2pM1EW87JaEw7iWoR8dfjMI-ZrSyLPxr-dnardgEyJuQ/exec";
 
@@ -21,7 +47,7 @@ function render(){
   data.forEach((row,i)=>{
     html+="<tr>";
     row.forEach((cell,j)=>{
-      html+=`<td><input value="${cell}" onchange="update(${i},${j},this.value)"></td>`;
+      html+=`<td><input value="${cell||""}" onchange="update(${i},${j},this.value)"></td>`;
     });
     html+=`
       <td>
@@ -38,43 +64,44 @@ function update(i,j,val){
   data[i][j]=val;
 }
 
-async function save(i){
+async function apiCall(payload){
   await fetch(API,{
     method:"POST",
-    body: JSON.stringify({
-      action:"update",
-      rowIndex:i+1,
-      row:data[i]
-    })
+    mode:"no-cors",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
+async function save(i){
+  await apiCall({
+    action:"update",
+    rowIndex:i+1,
+    row:data[i]
   });
   alert("Updated");
 }
 
 async function addRow(){
-  let newRow = Array(headers.length).fill("");
-
-  await fetch(API,{
-    method:"POST",
-    body: JSON.stringify({
-      action:"add",
-      row:newRow
-    })
+  await apiCall({
+    action:"add",
+    row:Array(headers.length).fill("")
   });
-
-  load();
+  setTimeout(load,500);
 }
 
 async function del(i){
-  await fetch(API,{
-    method:"POST",
-    body: JSON.stringify({
-      action:"delete",
-      rowIndex:i+1
-    })
+  await apiCall({
+    action:"delete",
+    rowIndex:i+1
   });
-
-  load();
+  setTimeout(load,500);
 }
 
 load();
 </script>
+
+</body>
+</html>
