@@ -1,0 +1,86 @@
+<!-- /admin.html -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<style>
+body { font-family: sans-serif; padding:20px; background:#111; color:#fff;}
+table { width:100%; border-collapse: collapse;}
+td,th { border:1px solid #333; padding:6px;}
+input { width:100%; background:#222; color:#fff; border:none;}
+button { margin:5px; padding:5px;}
+</style>
+</head>
+
+<body>
+
+<h2>⚙️ Admin Panel</h2>
+<a href="index.html">⬅ Back</a>
+
+<button onclick="addRow()">➕ Add Row</button>
+<button onclick="downloadCSV()">💾 Download CSV</button>
+
+<table id="table"></table>
+
+<script>
+let headers=[], data=[];
+
+async function load(){
+  const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQC1s8OV_Te8GtcwqbQRGfQyATRX0tyTX2rDjKuA74YB9W5yx3A2Ur77VkDMMZK3CSo-kgW-XuyHvDl/pub?output=csv");
+  const text = await res.text();
+
+  const rows=text.trim().split("\n").map(r=>r.split(","));
+  headers=rows.shift();
+  data=rows;
+
+  render();
+}
+
+function render(){
+  let html="<tr>";
+  headers.forEach(h=> html+=`<th>${h}</th>`);
+  html+="<th>Action</th></tr>";
+
+  data.forEach((row,i)=>{
+    html+="<tr>";
+    row.forEach((cell,j)=>{
+      html+=`<td><input value="${cell}" onchange="update(${i},${j},this.value)"></td>`;
+    });
+    html+=`<td><button onclick="del(${i})">❌</button></td>`;
+    html+="</tr>";
+  });
+
+  document.getElementById("table").innerHTML=html;
+}
+
+function update(i,j,val){
+  data[i][j]=val;
+}
+
+function addRow(){
+  data.push(Array(headers.length).fill(""));
+  render();
+}
+
+function del(i){
+  data.splice(i,1);
+  render();
+}
+
+function downloadCSV(){
+  let csv=headers.join(",")+"\n";
+  data.forEach(r=> csv+=r.join(",")+"\n");
+
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="data.csv";
+  a.click();
+}
+
+load();
+</script>
+
+</body>
+</html>
